@@ -83,6 +83,7 @@ void loop()
           Serial.print("\t");
           Serial.print(measurementData.distance_mm[x + y]);
           distances[x + y] = (measurementData.distance_mm[(((x + y) / 8) + 1)]);
+          lidarAngle = (x+y);
           command_mavlink();
           Serial.println();
         }
@@ -91,30 +92,9 @@ void loop()
     }
   }
 }
-  command_lidar();
-  command_servo();
-  // command_led();
-  //command_print();
-
-}
 
 
-void command_servo() {
-  pos += dir;
-  if (pos == 64)
-  {
-    dir = -1;
-  }
-
-  else if (pos == 1)
-  {
-    dir = 1;
-  }
-
-}
-
-void command_lidar() {
-
+ // command_print();
 
   void command_mavlink() {
 
@@ -124,7 +104,7 @@ void command_lidar() {
     int compid = 196;
     uint64_t time_usec = 0;
     uint8_t sensor_type = 0;
-    distances[pos] = Dist - 2.0f; //UINT16_MAX gets updated with actual distance values
+    distances[lidarAngle] = Dist - 2.0f; //UINT16_MAX gets updated with actual distance values
     uint8_t increment = 1;
     uint16_t min_distance = 10;
     uint16_t max_distance = 650;
@@ -160,21 +140,12 @@ void command_lidar() {
 
   }
 
-  void command_led() {
 
-    if (ledState == LOW) {
-      ledState = HIGH;
-    } else {
-      ledState = LOW;
-    }
-    digitalWrite(16, ledState);
-  }
-
-  void command_print() {
+//void command_print() {
 
     // Serial.print("range: ");
     //  Serial.print(sensor.ranging_data.range_mm);
     //  Serial.print("angle: ");
     // Serial.print(pos * stepAng);
     //  Serial.println();
-  }
+  //}
