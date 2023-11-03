@@ -11,6 +11,7 @@ int imageResolution = 0; //Used to pretty print output
 int imageWidth = 0; //Used to pretty print output
 
 
+
 unsigned long previousMillis = 0;
 const long interval = 100;
 
@@ -33,10 +34,12 @@ int pos = 1;          // servo position
 int dir = 1;          // servo moving direction: +1/-1
 int val;              // LiDAR measured value
 #define stepAng           1      // step angle
-#define numStep           64        // = 180/stepAng
+#define numStep           8        // = 180/stepAng
 
 void setup()
 {
+  Serial2.setRX(5);
+  Serial2.setTX(4);
   Serial2.begin(1500000); // FC
   Serial.begin(500000);
   Wire.setSDA(0);
@@ -54,7 +57,7 @@ void setup()
   }
 
   myImager.setResolution(8 * 8); //Enable all 64 pads
-
+  myImager.setIntegrationTime(50);
   imageResolution = myImager.getResolution(); //Query sensor for current resolution - either 4x4 or 8x8
   imageWidth = sqrt(imageResolution); //Calculate printing width
 
@@ -67,7 +70,7 @@ void loop()
 {
 
 
-  
+
   if (myImager.isDataReady() == true)
   {
     if (myImager.getRangingData(&measurementData)) //Read distance data into array
@@ -81,9 +84,9 @@ void loop()
         for (int x = imageWidth - 1 ; x >= 0 ; x--)
         {
           Serial.print("\t");
-          Serial.print(measurementData.distance_mm[x + y]);
-          distances[x + y] = (measurementData.distance_mm[(((x + y) / 8) + 1)]);
-          lidarAngle = (x+y);
+          Serial.print(measurementData.distance_mm[x + 4]);
+          distances[x] = (measurementData.distance_mm[(((x + 4) / 8) + 1)]/10);
+          lidarAngle = (x);
           command_mavlink();
           Serial.println();
         }
@@ -94,58 +97,60 @@ void loop()
 }
 
 
- // command_print();
-
-  void command_mavlink() {
+// command_print();
 
 
-    int sysid = 1;
-    //< The component sending the message.
-    int compid = 196;
-    uint64_t time_usec = 0;
-    uint8_t sensor_type = 0;
-    distances[lidarAngle] = Dist - 2.0f; //UINT16_MAX gets updated with actual distance values
-    uint8_t increment = 1;
-    uint16_t min_distance = 10;
-    uint16_t max_distance = 650;
-    float increment_f = 0;
-    float angle_offset = 0;
-    uint8_t frame = 12;
-    uint8_t system_type = MAV_TYPE_GENERIC;
-    uint8_t autopilot_type = MAV_AUTOPILOT_INVALID;
-    uint8_t system_mode = MAV_MODE_PREFLIGHT; ///< Booting up
-    uint32_t custom_mode = 30;                 ///< Custom mode, can be defined by user/adopter
-    uint8_t system_state = MAV_STATE_STANDBY; ///< System ready for flight
-
-    // Initialize the required buffers
-    mavlink_message_t msg;
-    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
-    int type = MAV_TYPE_GROUND_ROVER;
-    // Pack the message
-
-    mavlink_msg_obstacle_distance_pack(sysid, compid, &msg, time_usec, sensor_type, distances, increment, min_distance, max_distance, increment_f, angle_offset, frame);
-    uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
-    Serial1.write(buf, len);
+void command_mavlink() {
 
 
-    unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;
+  int sysid = 1;
+  //< The component sending the message.
+  int compid = 196;
+  uint64_t time_usec = 0;
+  uint8_t sensor_type = 0;
+  distances[messageAngle] = Dist - 2.0f; //UINT16_MAX gets updated with actual distance values
+  uint8_t increment = 8;
+  uint16_t min_distance = 10;
+  uint16_t max_distance = 400;
+  float increment_f = 0;
+  float angle_offset = -45;
+  uint8_t frame = 12;
+  uint8_t system_type = MAV_TYPE_GENERIC;
+  uint8_t autopilot_type = MAV_AUTOPILOT_INVALID;
+  uint8_t system_mode = MAV_MODE_PREFLIGHT; ///< Booting up
+  uint32_t custom_mode = 30;                 ///< Custom mode, can be defined by user/adopter
+  uint8_t system_state = MAV_STATE_STANDBY; ///< System ready for flight
+
+  // Initialize the required buffers
+  mavlink_message_t msg;
+  uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+  int type = MAV_TYPE_GROUND_ROVER;
+  // Pack the message
+
+  mavlink_msg_obstacle_distance_pack(sysid, compid, &msg, time_usec, sensor_type, distances, increment, min_distance, max_distance, increment_f, angle_offset, frame);
+  uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+  Serial2.write(buf, len);
 
 
-      mavlink_msg_heartbeat_pack(1, 196, &msg, type, autopilot_type, system_mode, custom_mode, system_state);
-      len = mavlink_msg_to_send_buffer(buf, &msg);
-      Serial1.write(buf, len);
-    }
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
 
+
+    mavlink_msg_heartbeat_pack(1, 196, &msg, type, autopilot_type, system_mode, custom_mode, system_state);
+    len = mavlink_msg_to_send_buffer(buf, &msg);
+    Serial2.write(buf, len);
   }
+
+}
+
 
 
 //void command_print() {
 
-    // Serial.print("range: ");
-    //  Serial.print(sensor.ranging_data.range_mm);
-    //  Serial.print("angle: ");
-    // Serial.print(pos * stepAng);
-    //  Serial.println();
-  //}
+// Serial.print("range: ");
+//  Serial.print(sensor.ranging_data.range_mm);
+//  Serial.print("angle: ");
+// Serial.print(pos * stepAng);
+//  Serial.println();
+//}
