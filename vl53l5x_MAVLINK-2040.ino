@@ -78,19 +78,13 @@ void loop()
 
       //The ST library returns the data transposed from zone mapping shown in datasheet
       //Pretty-print data with increasing y, decreasing x to reflect reality
-      for (int y = 0 ; y <= imageWidth * (imageWidth - 1) ; y += imageWidth)
-      {
 
-        for (int x = imageWidth - 1 ; x >= 0 ; x--)
-        {
-          Serial.print("\t");
-          Serial.print(measurementData.distance_mm[x + 4]);
-          distances[x] = (measurementData.distance_mm[(((x + 4) / 8) + 1)]/10);
-          lidarAngle = (x);
-          command_mavlink();
-          Serial.println();
-        }
-        Serial.println();
+
+      for (int x = imageWidth - 1 ; x >= 0 ; x--)
+      {
+        lidarAngle = (x);
+        command_mavlink();
+
       }
     }
   }
@@ -108,12 +102,12 @@ void command_mavlink() {
   int compid = 196;
   uint64_t time_usec = 0;
   uint8_t sensor_type = 0;
-  distances[messageAngle] = Dist - 2.0f; //UINT16_MAX gets updated with actual distance values
+  distances[lidarAngle] = (measurementData.distance_mm[lidarAngle] / 10);
   uint8_t increment = 8;
   uint16_t min_distance = 10;
   uint16_t max_distance = 400;
   float increment_f = 0;
-  float angle_offset = -45;
+  float angle_offset = -30;
   uint8_t frame = 12;
   uint8_t system_type = MAV_TYPE_GENERIC;
   uint8_t autopilot_type = MAV_AUTOPILOT_INVALID;
